@@ -1,6 +1,7 @@
 # Playcard App
 
 This repository contains the source code for the Playcard Flutter application.
+You need a JSON api server like https://github.com/ArnoldSchiller/playcard for this to work.
 
 ---
 
