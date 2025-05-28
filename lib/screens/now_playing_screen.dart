@@ -87,8 +87,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   mediaPlayerProvider.currentSong!.coverImageUrl != null && mediaPlayerProvider.currentSong!.coverImageUrl!.isNotEmpty
                       ? Image.network(
                           mediaPlayerProvider.currentSong!.coverImageUrl!,
-                          width: MediaQuery.of(context).size.width * 0.8, // 80% der Breite
-                          height: MediaQuery.of(context).size.width * 0.8,
+                          width: MediaQuery.of(context).size.width * 0.3, // 30% der Breite
+                          height: MediaQuery.of(context).size.width * 0.3,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               Image.asset(
@@ -143,14 +143,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
               ],
             ),
             // Fortschrittsbalken (optional, kann später hinzugefügt werden)
-            // Slider(
-            //   min: 0,
-            //   max: mediaPlayerProvider.currentDuration.inSeconds.toDouble(),
-            //   value: mediaPlayerProvider.currentPosition.inSeconds.toDouble(),
-            //   onChanged: (value) {
-            //     mediaPlayerProvider.player?.seek(Duration(seconds: value.toInt()));
-            //   },
-            // ),
+             Slider(
+               min: 0,
+               max: mediaPlayerProvider.currentDuration.inSeconds.toDouble(),
+               value: mediaPlayerProvider.currentPosition.inSeconds.toDouble(),
+               onChanged: (value) {
+                 mediaPlayerProvider.player?.seek(Duration(seconds: value.toInt()));
+               },
+             ),
           ],
         ),
       ),

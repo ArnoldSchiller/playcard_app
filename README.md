@@ -62,7 +62,7 @@ These instructions will get you a copy of the project up and running on your loc
 ## License
 
 This project is licensed under the **MIT License 1.0**.
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 Copyright (c) 2025 Arnold Schiller <schiller@babsi.de>
 
 For the Media-kit library, the copyright is:
