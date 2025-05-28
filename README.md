@@ -13,18 +13,6 @@ These instructions will get you a copy of the project up and running on your loc
 * **Flutter SDK**: Ensure you have Flutter installed. Follow the official Flutter installation guide: [https://flutter.dev/docs/get-started/install](https://flutter.dev/docs/get-started/install)
 * **Android Studio / Android SDK**: For Android development, you'll need Android Studio and the Android SDK.
 * **Java Development Kit (JDK)**: This project is configured to use Java 17 for Android compilation. Please ensure you have JDK 17 installed and configured correctly. You can download OpenJDK from Adoptium: [https://adoptium.net/temurin/releases/](https://adoptium.net/temurin/releases/)
-* **Linux Build Dependencies (for Linux users)**:
-    For building and running the application on Linux, you need several development libraries. On Debian/Ubuntu-based systems, these can be installed with:
-    ```bash
-    sudo apt update
-    sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev libappindicator3-dev
-    ```
-    Additionally, for media playback via `media_kit`, the **mpv development libraries** are required for building and the **mpv runtime library** for running the application. On Debian/Ubuntu-based systems, install:
-    ```bash
-    sudo apt install libmpv-dev # Required for building
-    # libmpv1 (or libmpv) is usually installed as a dependency or needed for runtime
-    ```
-    *(Note: Package names might vary on other Linux distributions. Refer to your distribution's documentation.)*
 
 ### Installation and Setup
 
@@ -50,17 +38,11 @@ These instructions will get you a copy of the project up and running on your loc
 4.  **Run the application (Debug Mode):**
 
     * **Connect an Android device** (with USB debugging enabled) or start an Android Emulator.
-    * To run on **Android**:
+    * Run the app:
         ```bash
         flutter run
         ```
-    * To run on **Linux Desktop**:
-        ```bash
-        flutter run -d linux
-        ```
-        *(Ensure you have enabled Linux desktop support for Flutter: `flutter config --enable-linux-desktop`)*
-
-    This command will build and install the debug version of the app on your connected device/emulator or run it on your Linux desktop.
+    This command will build and install the debug version of the app on your connected device/emulator.
 
 ---
 
