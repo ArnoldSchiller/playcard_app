@@ -242,42 +242,6 @@ class _RadioStatusScreenState extends State<RadioStatusScreen> {
                 ),
             ],
           ),
-          /**
-          if (mediaPlayerProvider.hasVideo && mediaPlayerProvider.videoController != null)
-            Positioned.fill(
-              child: Stack(
-                children: [
-                  Video(controller: mediaPlayerProvider.videoController!),
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 10,
-                    left: 10,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: IconButton(
-                        icon: Icon(Icons.close, color: Colors.white),
-                        onPressed: () {
-                          mediaPlayerProvider.resetPlayer();
-                          Navigator.popUntil(
-                              context, (route) => route.isFirst);
-                        },
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (context) => NowPlayingScreen(),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          **/
             
         ],
       ),
@@ -290,3 +254,4 @@ class _RadioStatusScreenState extends State<RadioStatusScreen> {
 
 //End Class
 }
+

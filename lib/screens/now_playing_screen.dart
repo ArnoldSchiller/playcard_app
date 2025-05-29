@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:media_kit_video/media_kit_video.dart'; // Für Video-Wiedergabe
-
 import 'package:playcard_app/config/constants.dart';
 import 'package:playcard_app/providers/search_provider.dart';
 import 'package:playcard_app/providers/media_player_provider.dart'; // NEU: Importiere den MediaPlayerProvider
@@ -143,14 +142,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
               ],
             ),
             // Fortschrittsbalken (optional, kann später hinzugefügt werden)
-             Slider(
-               min: 0,
-               max: mediaPlayerProvider.currentDuration.inSeconds.toDouble(),
-               value: mediaPlayerProvider.currentPosition.inSeconds.toDouble(),
-               onChanged: (value) {
-                 mediaPlayerProvider.player?.seek(Duration(seconds: value.toInt()));
-               },
-             ),
+            // Slider(
+            //   min: 0,
+            //    max: mediaPlayerProvider.currentDuration.inSeconds.toDouble(),
+            //   value: mediaPlayerProvider.currentPosition.inSeconds.toDouble(),
+            //   onChanged: (value) {
+            //     mediaPlayerProvider.player?.seek(Duration(seconds: value.toInt()));
+            //   },
+            // ),
           ],
         ),
       ),
