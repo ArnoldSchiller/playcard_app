@@ -1,159 +1,112 @@
 // lib/screens/now_playing_screen.dart
-import 'package:flutter/material.dart';
+import 'package:playcard_app/config/config.dart';
 import 'package:provider/provider.dart';
-import 'package:media_kit_video/media_kit_video.dart'; // Für Video-Wiedergabe
-import 'package:playcard_app/config/constants.dart';
-import 'package:playcard_app/providers/search_provider.dart';
-import 'package:playcard_app/providers/media_player_provider.dart'; // NEU: Importiere den MediaPlayerProvider
-import 'package:playcard_app/widgets/playcard_app_bar.dart';
+import 'package:playcard_app/models/song.dart';
+import 'package:playcard_app/providers/media_player_provider.dart';
 
-class NowPlayingScreen extends StatefulWidget {
-  const NowPlayingScreen({
-    super.key,
-  });
+class NowPlayingScreen extends StatelessWidget {
+  const NowPlayingScreen({super.key});
 
-  @override
-  State<NowPlayingScreen> createState() => _NowPlayingScreenState();
-}
-
-class _NowPlayingScreenState extends State<NowPlayingScreen> {
   @override
   Widget build(BuildContext context) {
-    // Watch the SearchProvider for the search bar
-    final searchProvider = context.watch<SearchProvider>();
-    // Watch the MediaPlayerProvider for current song and player state
     final mediaPlayerProvider = context.watch<MediaPlayerProvider>();
-    ////print('DBG: RadioStatusScreen canPop(): ${Navigator.of(context).canPop()}');
+    final Song? currentSong = mediaPlayerProvider.currentSong;
 
-    // Wenn kein Song spielt, zeige eine Meldung oder gehe zurück
-    if (mediaPlayerProvider.currentSong == null) {
-      return Scaffold(
-        appBar: PlaycardAppBar(
-          title: kAppName, // App-Name aus Constants
-          searchController: searchProvider.searchController,
-          onSearchChanged: (text) {}, // Logik im SearchProvider
-          hintText: 'Search songs, artists, or genres...',
-        ),
-        body: const Center(
-          child: Text('No song is currently playing.'),
-        ),
-      );
-    }
+    // Bestimmen, ob es sich um einen Live-Stream handelt
+    // Ein Live-Stream hat oft eine Dauer von Duration.zero oder Duration.infinity
+    // oder einfach eine sehr große Dauer, die nicht seekbar ist.
+    // Hier nutzen wir currentDuration == Duration.zero als Indikator.
+    // Sie könnten auch prüfen, ob currentDuration.inSeconds < 1 oder ähnliches ist.
+    final bool isLiveStream = mediaPlayerProvider.currentDuration == Duration.zero;
 
-    // Wenn ein Song spielt, zeige den Now Playing Screen
     return Scaffold(
-      appBar: PlaycardAppBar(
-        title: mediaPlayerProvider.currentSong!.name, // Titel ist der Song-Name
-        searchController: searchProvider.searchController,
-        onSearchChanged: (text) {
-          // Wenn der Benutzer etwas in die Suche eingibt, navigiere zurück zum Hauptscreen
-          if (text.isNotEmpty && Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-        },
-        hintText: 'Search songs, artists, or genres...',
+      appBar: AppBar(
+        title: const Text('Now Playing'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Video-Anzeige, wenn es ein Video ist
-            if (mediaPlayerProvider.hasVideo && mediaPlayerProvider.videoController != null)
-              Expanded(
-                child: Stack(
+      body: currentSong == null
+          ? const Center(child: Text('No song is currently playing.'))
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (currentSong.coverImageUrl != null && currentSong.coverImageUrl!.isNotEmpty)
+                  Image.network(
+                    currentSong.coverImageUrl!,
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.music_note, size: 200),
+                  )
+                else
+                  const Icon(Icons.music_note, size: 200),
+                const SizedBox(height: 16),
+                Text(
+                  currentSong.name,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  currentSong.artist ?? 'Unknown Artist',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    AspectRatio(
-                      aspectRatio: 16 / 9, // Oder ein anderes passendes Seitenverhältnis
-                      child: Video(controller: mediaPlayerProvider.videoController!),
+                    IconButton(
+                      icon: const Icon(Icons.skip_previous),
+                      onPressed: () {
+                        mediaPlayerProvider.stop();
+                        Navigator.pop(context);
+                      },
                     ),
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () {
-                          Navigator.of(context).pop(); // zurück zum Hauptscreen
-                        },
+                    IconButton(
+                      icon: Icon(
+                        mediaPlayerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
                       ),
+                      onPressed: () {
+                        mediaPlayerProvider.playOrPause();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.skip_next),
+                      onPressed: () {
+                        mediaPlayerProvider.playNextRandom();
+                      },
                     ),
                   ],
                 ),
-              )
-            else // Ansonsten Cover-Bild oder Musik-Icon
-              Column(
-                children: [
-                  // Cover-Bild
-                  mediaPlayerProvider.currentSong!.coverImageUrl != null && mediaPlayerProvider.currentSong!.coverImageUrl!.isNotEmpty
-                      ? Image.network(
-                          mediaPlayerProvider.currentSong!.coverImageUrl!,
-                          width: MediaQuery.of(context).size.width * 0.3, // 30% der Breite
-                          height: MediaQuery.of(context).size.width * 0.3,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Image.asset(
-                                kLogo, // Dein Standard-Icon
-                                width: MediaQuery.of(context).size.width * 0.3,
-                                height: MediaQuery.of(context).size.width * 0.3,
-                                fit: BoxFit.contain,
-                              ),
-                        )
-                      : Image.asset(
-                          kLogo, // Dein Standard-Icon
-                          width: MediaQuery.of(context).size.width * 0.3,
-                          height: MediaQuery.of(context).size.width * 0.3,
-                          fit: BoxFit.contain,
-                        ),
-                  const SizedBox(height: 20),
-                  Text(
-                    mediaPlayerProvider.currentSong!.name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    mediaPlayerProvider.currentSong!.artist ?? 'Unknown Artist',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            const SizedBox(height: 20),
-            // Player Controls
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.skip_previous, size: 48),
-                  onPressed: () {
-                    // TODO: Implement previous song logic
-                  },
-                ),
-                IconButton(
-                  icon: Icon(mediaPlayerProvider.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled, size: 64),
-                  onPressed: () {
-                    mediaPlayerProvider.playOrPause();
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.skip_next, size: 48),
-                  onPressed: () {
-                    // TODO: Implement next song logic
-                  },
+                // === HIER IST DIE WICHTIGE ÄNDERUNG FÜR DEN SLIDER ===
+                if (!mediaPlayerProvider.isBuffering && !isLiveStream) // Nur anzeigen, wenn nicht puffert UND NICHT LIVE-STREAM
+                  Slider(
+                    value: mediaPlayerProvider.currentPosition.inSeconds.toDouble(),
+                    min: 0,
+                    // Die max-Property muss einen sinnvollen Wert haben.
+                    // Wenn currentDuration 0 ist (Live-Stream), setzen wir max auf einen kleinen Wert (z.B. 1.0),
+                    // aber da wir den Slider für Live-Streams ausblenden, sollte das hier kein Problem mehr sein.
+                    // Der .clamp ist gut, um sicherzustellen, dass es mindestens 1.0 ist,
+                    // falls die Dauer mal kurzzeitig 0 oder kleiner als 1 ist.
+                    max: mediaPlayerProvider.currentDuration.inSeconds.toDouble().clamp(1.0, double.infinity),
+                    onChanged: (value) {
+                      mediaPlayerProvider.seek(Duration(seconds: value.toInt()));
+                    },
+                  )
+                else if (mediaPlayerProvider.isBuffering) // Nur anzeigen, wenn puffert
+                  const CircularProgressIndicator()
+                else if (isLiveStream) // Wenn es ein Live-Stream ist, zeigen wir keinen Slider, vielleicht nur einen Text
+                  const Text('Live Stream') // Oder ein leeres SizedBox(), wenn Sie nichts anzeigen wollen
+                , // Komma am Ende des Conditional-Widgets
+
+                Text(
+                  // Überprüfen Sie, ob currentDuration.inSeconds gültig ist, um die Anzeige zu steuern
+                  isLiveStream
+                      ? 'Live' // Oder eine andere Anzeige für Live-Streams
+                      : '${mediaPlayerProvider.currentPosition.inMinutes}:${(mediaPlayerProvider.currentPosition.inSeconds % 60).toString().padLeft(2, '0')} / '
+                        '${mediaPlayerProvider.currentDuration.inMinutes}:${(mediaPlayerProvider.currentDuration.inSeconds % 60).toString().padLeft(2, '0')}',
                 ),
               ],
             ),
-            // Fortschrittsbalken (optional, kann später hinzugefügt werden)
-            // Slider(
-            //   min: 0,
-            //    max: mediaPlayerProvider.currentDuration.inSeconds.toDouble(),
-            //   value: mediaPlayerProvider.currentPosition.inSeconds.toDouble(),
-            //   onChanged: (value) {
-            //     mediaPlayerProvider.player?.seek(Duration(seconds: value.toInt()));
-            //   },
-            // ),
-          ],
-        ),
-      ),
     );
   }
 }
-

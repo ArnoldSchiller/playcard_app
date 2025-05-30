@@ -1,15 +1,42 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"> <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
-    <application
-        android:label="Playcard jaquearnoux.de"  
-        android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
-        <activity
+    <!-- Wenn Sie Android 14 (API 34) oder höher targeten, ist diese Permission nötig.
+         Wenn Sie ältere Android-Versionen unterstützen, ist sie optional, aber schadet nicht. -->
+
+    <application android:label="Playcard jaquearnoux.de"
+	    android:name="${applicationName}" >
+        <meta-data
+            android:name="com.ryanheise.audioservice.notification.channel.id"
+            android:value="de.jaquearnoux.playcard_app.channel.audio" />
+        <meta-data
+            android:name="com.ryanheise.audioservice.notification.channel.name"
+            android:value="PlayCard Audio" />
+        <meta-data
+            android:name="com.ryanheise.audioservice.notification.ongoing"
+            android:value="true" />
+        <meta-data
+            android:name="com.ryanheise.audioservice.notification.stop_foreground_on_pause"
+            android:value="false" />
+        <meta-data
+            android:name="com.ryanheise.audioservice.notification.show_badge"
+            android:value="true" />
+        <meta-data
+            android:name="com.ryanheise.audioservice.notification.always_show_controllable_notification"
+            android:value="true" />
+
+        <!-- Dies ist das Icon, das in der Benachrichtigung und auf dem Sperrbildschirm erscheint.
+             Es muss ein kleines, weißes Icon mit transparentem Hintergrund sein.
+             Legen Sie eine Datei z.B. ic_stat_playcard.png in android/app/src/main/res/drawable/ ab.
+             Oder verwenden Sie ein vorhandenes wie ic_launcher, wenn es passt. -->
+        <meta-data
+		android:name="com.ryanheise.audioservice.notification.icon"
+		android:resource="@mipmap/launcher_icon" />
+            <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
@@ -18,47 +45,41 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+
+	<activity
+    	    android:name="com.ryanheise.audioservice.AudioServiceActivity"
+            android:exported="true" android:theme="@android:style/Theme.Light.NoTitleBar" />
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
 
-	<service android:name="com.ryanheise.audioservice.AudioService"
+        <service android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="true"
-            android:singleUser="true" >
-            <intent-filter>
+            android:singleUser="true"
+            tools:ignore="Instantiatable"> <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
 
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
-            android:exported="true" >
-            <intent-filter>
+            android:exported="true"
+            tools:ignore="Instantiatable"> <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
 
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

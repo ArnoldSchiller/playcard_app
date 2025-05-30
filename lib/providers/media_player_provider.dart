@@ -1,169 +1,157 @@
-// lib/providers/media_player_provider.dart
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart'; // Importieren für BuildContext
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:playcard_app/config/constants.dart';
-import 'package:playcard_app/models/song.dart';
-import 'package:playcard_app/services/api_service.dart'; // API Service für zufälligen Song
+import 'dart:math';
+import 'package:just_audio/just_audio.dart';
+import 'package:playcard_app/config/config.dart';
+import 'package:provider/provider.dart';
 
 class MediaPlayerProvider extends ChangeNotifier {
-  Player? _player;
-  VideoController? _videoController;
+  final AudioPlayer _player = AudioPlayer();
+  final ApiService _apiService = ApiService();
   Song? _currentSong;
   bool _isPlaying = false;
   Duration _currentPosition = Duration.zero;
   Duration _currentDuration = Duration.zero;
   bool _isBuffering = false;
-  bool _hasVideo = false;
-
-  // NEU: Historie für "Zurück"
-  final List<Song> _history = [];
-  // NEU: Referenz zum ApiService
-  final ApiService _apiService;
-
-  Player? get player => _player;
-  VideoController? get videoController => _videoController;
 
   Song? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   Duration get currentPosition => _currentPosition;
   Duration get currentDuration => _currentDuration;
   bool get isBuffering => _isBuffering;
-  bool get hasVideo => _hasVideo;
 
-  // MediaPlayerProvider benötigt jetzt den ApiService
-  MediaPlayerProvider(this._apiService) { // <-- Änderung im Konstruktor
-    _player = Player();
-    _player!.stream.playing.listen((isPlaying) {
+  MediaPlayerProvider() {
+    _player.playingStream.listen((isPlaying) {
       _isPlaying = isPlaying;
       notifyListeners();
     });
-    _player!.stream.position.listen((position) {
+    _player.positionStream.listen((position) {
       _currentPosition = position;
       notifyListeners();
     });
-    _player!.stream.duration.listen((duration) {
-      _currentDuration = duration;
+    _player.durationStream.listen((duration) {
+      _currentDuration = duration ?? Duration.zero;
       notifyListeners();
     });
-    _player!.stream.buffering.listen((isBuffering) {
-      _isBuffering = isBuffering;
+    _player.processingStateStream.listen((state) {
+      _isBuffering = state == ProcessingState.buffering || state == ProcessingState.loading;
+      if (state == ProcessingState.completed && _currentSong != null) {
+        play(_currentSong!);
+      }
       notifyListeners();
-    });
-    _player!.stream.error.listen((error) {
-      //print('MediaPlayerProvider Error: $error');
     });
   }
 
-  @override
-  Future<void> play(Song song) async { // <-- async hinzugefügt, falls noch nicht da
-    if (_player == null) {
-      //print('Error: Player not initialized.');
+  Future<void> play(Song song) async {
+    if (song.streamUrl.isEmpty || Uri.tryParse(song.streamUrl)?.isAbsolute != true) {
+      print('Invalid stream URL: ${song.streamUrl}');
       return;
     }
-
-    // NEU: Aktuellen Song zur Historie hinzufügen, BEVOR ein neuer gespielt wird
-    if (_currentSong != null && _currentSong!.streamUrl != song.streamUrl) {
-      _history.add(_currentSong!);
-      // Optional: Limit der Historie, z.B. nur die letzten 20 Songs behalten
-      if (_history.length > 20) {
-        _history.removeAt(0);
-      }
-    }
-
     _currentSong = song;
-    _hasVideo = song.streamUrl.endsWith('.mp4');
-
-    if (_hasVideo && _videoController == null) {
-      _videoController = VideoController(_player!);
-    } else if (!_hasVideo && _videoController != null) {
-      _videoController = null;
+    try {
+      // Android: Nutze AudioService
+      await AudioService.playMediaItem(MediaItem(
+        id: song.streamUrl,
+        title: song.name,
+        artist: song.artist ?? 'Unknown',
+        artUri: song.coverImageUrl != null ? Uri.parse(song.coverImageUrl!) : null,
+      ));
+      print('Playing with audio_service: ${song.name} - URL: ${song.streamUrl}');
+      // Synchronisiere just_audio für lokale Steuerung
+      await _player.setAudioSource(
+        AudioSource.uri(
+          Uri.parse(song.streamUrl),
+          tag: MediaItem(
+            id: song.streamUrl,
+            title: song.name,
+            artist: song.artist ?? 'Unknown',
+            artUri: song.coverImageUrl != null ? Uri.parse(song.coverImageUrl!) : null,
+          ),
+        ),
+        preload: false,
+      );
+      await _player.play();
+    } catch (e) {
+      print('Error playing stream: $e');
+      Future.delayed(const Duration(seconds: 2), () => play(song));
     }
-
     notifyListeners();
-
-    //print('Playing: ${song.name} - URL: ${song.streamUrl}');
-    await _player!.open(Media(song.streamUrl));
-    _player!.play();
   }
 
   Future<void> playOrPause() async {
-    if (_player != null) {
-      await _player!.playOrPause();
+    try {
+      if (_isPlaying) {
+        await AudioService.pause();
+        await _player.pause();
+      } else {
+        await AudioService.play();
+        await _player.play();
+      }
+    } catch (e) {
+      print('Error in playOrPause: $e');
     }
   }
 
   Future<void> stop() async {
-    if (_player != null) {
-      await _player!.stop();
+    try {
+      await AudioService.stop();
+      await _player.stop();
       _currentSong = null;
       _isPlaying = false;
       _currentPosition = Duration.zero;
       _currentDuration = Duration.zero;
       _isBuffering = false;
-      _hasVideo = false;
-      _history.clear(); // Optional: Historie beim Stoppen leeren
       notifyListeners();
+    } catch (e) {
+      print('Error stopping player: $e');
     }
   }
 
-  Future<void> resetPlayer() async {
-    if (_player != null) {
-      await _player!.dispose();
-      _currentSong = null;
-      _isPlaying = false;
-      _hasVideo = false;
-      _videoController = null;
-      _history.clear(); // Auch hier Historie leeren
-      notifyListeners();
-    }
-  }
-
-  // NEU: Methode für "Nächster Song" (zufällig)
   Future<void> playNextRandom() async {
     try {
-      final randomSong = await _apiService.fetchRandomSong(); // API aufrufen
+      final randomSong = await _apiService.fetchRandomRadioStream();
       if (randomSong != null) {
-        await play(randomSong); // Neuen Song abspielen (fügt ihn automatisch zur Historie hinzu)
-      } else {
-        //print('No random song fetched.');
+        await play(randomSong);
       }
     } catch (e) {
-      //print('Error fetching random song: $e');
-      // Hier können Sie Fehlerbehandlung einfügen, z.B. eine Toast-Nachricht anzeigen
+      print('Error fetching random stream: $e');
     }
   }
 
-  // NEU: Methode für "Vorheriger Song" (Historie oder Screen zurück)
-  Future<void> playPreviousOrPopScreen(BuildContext context) async {
-    if (_history.isNotEmpty) {
-      final previousSong = _history.removeLast(); // Letzten Song aus Historie holen
-      await play(previousSong); // Abspielen
-    } else {
-      // Wenn der Verlauf leer ist, versuchen wir, einen Screen zurückzugehen
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        // Dies ist der Fall, wenn kein Song in der Historie und kein Screen mehr zum Poppen da ist.
-        // Hier können Sie entscheiden, was passieren soll:
-        // 1. Nichts tun (App bleibt auf dem aktuellen Screen)
-        // 2. Explizit zum Home-Screen navigieren (um sicherzustellen, dass die App nicht "steckenbleibt")
-        // Beispiel für 2:
-        // Navigator.of(context).pushAndRemoveUntil(
-        //   MaterialPageRoute(builder: (ctx) => HomeScreen()), // Ersetzen Sie HomeScreen() durch Ihren tatsächlichen Startscreen
-        //   (route) => false, // Entfernt alle vorherigen Routen
-        // );
-        //print("INFO: No previous song in history and cannot pop screen. Consider navigating to a default screen.");
+  Future<void> playNextRandomTrack(BuildContext context) async {
+    try {
+      final searchProvider = context.read<SearchProvider>();
+      if (searchProvider.searchResults.isNotEmpty) {
+        final randomIndex = Random().nextInt(searchProvider.searchResults.length);
+        final nextSong = searchProvider.searchResults[randomIndex];
+        await play(nextSong);
+        return;
       }
+      final randomTrack = await _apiService.fetchRandomTrack();
+      final song = Song.fromJson({...randomTrack, 'isRadioStream': false});
+      await play(song);
+    } catch (e) {
+      print('Error fetching random track: $e');
+      await playNextRandom();
+    }
+  }
+
+  Future<void> seek(Duration position) async {
+    try {
+      await AudioService.seekTo(position);
+      await _player.seek(position);
+      notifyListeners();
+    } catch (e) {
+      print('Error seeking: $e');
     }
   }
 
   @override
   void dispose() {
-    _player?.dispose();
-    // KEIN _videoController?.dispose() hier! Der VideoController wird mit dem Player disposed.
+    try {
+      _player.dispose();
+    } catch (e) {
+      print('Error disposing player: $e');
+    }
     super.dispose();
-    //print('MediaPlayerProvider disposed.');
+    print('MediaPlayerProvider disposed.');
   }
 }

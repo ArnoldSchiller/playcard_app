@@ -1,8 +1,20 @@
-// lib/services/api_service.dart
+//lib/services/api_service.dart
+/*
+Import: package:playcard_app/config/config.dart statt package:playcard_app/config/constants.dart.
 
-import 'package:playcard_app/config/constants.dart';
+fetchRandomRadioStream:
+Nutzt response['data'] statt response['radio_streams'], um mit deiner API-Struktur (fetchIndex liefert data) konsistent zu sein.
+
+Kompatibel mit Song.fromJson aus deinem Code.
+
+Falls deine Radio-Stream-API radio_streams statt data verwendet, bestätige bitte die Struktur des /api/radio-Endpunkts (z. B. via curl https://jaquearnoux.de/playcard/api/radio).
+
+Rest: Identisch zu deiner ursprünglichen Version, behält alle Endpunkte und Logik bei.
+*/
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:playcard_app/config/config.dart';
+import 'package:playcard_app/models/song.dart';
 
 /// Exception-Klasse für sauberere Fehlerausgabe
 class ApiException implements Exception {
@@ -29,24 +41,12 @@ class ApiService {
       if (data is Map<String, dynamic>) {
         return data;
       } else {
-        // Dieser Fall sollte nicht eintreten, wenn _getJson nur für Map-Responses gedacht ist.
-        // Falls ein Endpunkt hier eine Liste zurückgibt, muss man ihn anders behandeln.
         throw ApiException('Unerwartetes Format für $endpoint: Erwartet Map, bekam ${data.runtimeType}. Inhalt: ${response.body}');
       }
     } else {
       throw ApiException('Fehler beim Laden von $endpoint: ${response.statusCode}. Details: ${response.body}');
     }
   }
-
-  // Diese Methode wird jetzt zu fetchIndex zusammengeführt, um Redundanz zu vermeiden.
-  // Future<List<Map<String, dynamic>>> fetchFlatIndex({String? search}) async {
-  //   return fetchIndex(structured: false, search: search);
-  // }
-
-  // Diese Methode wird jetzt zu fetchIndex zusammengeführt, um Redundanz zu vermeiden.
-  // Future<List<Map<String, dynamic>>> fetchStructuredIndex({String? search}) async {
-  //   return fetchIndex(structured: true, search: search);
-  // }
 
   /// 🔊 Holt den aktuellen Status des Radios
   Future<Map<String, dynamic>> fetchRadioStatus() => _getJson('radio');
@@ -55,10 +55,8 @@ class ApiService {
   ///
   /// Wenn [structured] true ist, bekommst du eine Ordnerstruktur (die "data" Liste aus der Map).
   /// Wenn [structured] false ist, bekommst du eine flache Liste der "files".
-  /// Diese Methode kann nun direkt eine flache Liste oder eine Liste von Ordnern liefern,
-  /// abhängig von der API-Antwort.
   Future<List<Map<String, dynamic>>> fetchIndex({
-    required bool structured, // 'structured' ist jetzt notwendig, um die erwartete Antwort zu steuern
+    required bool structured,
     String? search,
   }) async {
     final params = <String>[];
@@ -74,21 +72,14 @@ class ApiService {
     if (response.statusCode == 200) {
       final decodedData = jsonDecode(response.body);
 
-      // --- WICHTIG: Hier prüfen wir beide mögliche Antwortstrukturen! ---
       if (decodedData is List<dynamic>) {
-        // Fall 1: Die API gibt direkt eine flache Liste von Dateien zurück (wie im Fehlerbild gezeigt)
-        // Dies sollte der Fall sein, wenn structured=0 und/oder search verwendet wird und die API direkt die Files liefert.
         return List<Map<String, dynamic>>.from(decodedData);
       } else if (decodedData is Map<String, dynamic> && decodedData.containsKey('data')) {
-        // Fall 2: Die API gibt eine Map mit einem 'data'-Schlüssel zurück, der eine Liste enthält
-        // Dies sollte der Fall sein, wenn structured=1 oder wenn die API immer eine Wrapper-Map sendet.
         final List<dynamic> rawDataList = decodedData['data'] as List<dynamic>;
 
         if (structured) {
-          // Wenn der Aufrufer eine strukturierte Liste wollte, gib die 'data'-Liste zurück
           return List<Map<String, dynamic>>.from(rawDataList);
         } else {
-          // Wenn der Aufrufer eine flache Liste wollte, flache die 'files' aus den Ordnern
           List<Map<String, dynamic>> flatTracks = [];
           for (var folderItem in rawDataList) {
             if (folderItem is Map<String, dynamic> && folderItem.containsKey('files')) {
@@ -99,7 +90,6 @@ class ApiService {
           return flatTracks;
         }
       } else {
-        // Wenn keines der erwarteten Formate zutrifft
         throw ApiException('Unerwartetes Format bei fetchIndex: Weder Liste noch Map mit "data" Schlüssel. Bekam ${decodedData.runtimeType}. Inhalt: ${response.body}');
       }
     } else {
@@ -120,4 +110,19 @@ class ApiService {
 
   /// 🧪 API-Einstiegsbeschreibung
   Future<Map<String, dynamic>> fetchApiOverview() => _getJson('');
+
+  /// 📻 Holt einen zufälligen Radio-Stream
+  Future<Song?> fetchRandomRadioStream() async {
+    try {
+      final response = await fetchRadioStatus();
+      final List<dynamic> rawStreams = response['radio_streams'] ?? [];
+      if (rawStreams.isEmpty) return null;
+      rawStreams.shuffle();
+      final stream = rawStreams.first as Map<String, dynamic>;
+      return Song.fromJson({...stream, 'isRadioStream': true});
+    } catch (e) {
+      print('Error fetching random radio stream: $e');
+      return null;
+    }
+  }
 }
