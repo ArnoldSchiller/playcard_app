@@ -1,3 +1,7 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,10 +9,21 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+
+
+
 android {
     namespace = "de.jaquearnoux.playcard_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // ndkVersion = flutter.ndkVersion
+    // HIER EINFÜGEN:
+    ndkVersion = "27.0.12077973" // <-- Diese Zeile hinzufügen!
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_19
@@ -29,12 +44,28 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+    splits {
+        abi {
+            // Explizite Zuweisung über Methoden
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
+    }     
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+	    signingConfig = signingConfigs.getByName("release")
         }
     }
 }
@@ -43,7 +74,7 @@ flutter {
     source = "../.."
 }
 
-
 dependencies {
     implementation("com.google.android.material:material:1.12.0")
 }
+
