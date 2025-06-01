@@ -1,120 +1,120 @@
 // lib/services/audio_handler.dart
 import 'package:audio_service/audio_service.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:audio_session/audio_session.dart';
+import 'package:playcard_app/services/adapter_interface.dart';
+import 'package:playcard_app/services/just_audio_adapter.dart';
+import 'package:playcard_app/services/audioplayers_adapter.dart';
+import 'package:playcard_app/utils/app_startup.dart';
 
-class AudioPlayerHandler extends BaseAudioHandler {
-  final _player = AudioPlayer();
+class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
+  AudioPlayerAdapter? _playerAdapter;
+  PlaybackState _playbackState = PlaybackState();
+  MediaItem? _currentMediaItem;
 
   AudioPlayerHandler() {
-    _initPlayer();
-  }
+    // Plattform-spezifische Präferenz
+    bool preferAudioplayers = AppStartup.currentPlatform == SupportedPlatform.linux;
 
-  Future<void> _initPlayer() async {
-    final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration.music());
-
-    _player.playbackEventStream.map(_transformEvent).listen((event) {
-      playbackState.add(event);
-    });
-
-    _player.sequenceStateStream.listen((event) {
-      if (event?.currentSource != null) {
-        final bool isRadioStream = event?.currentSource?.tag.extras?['isRadioStream'] ?? false;
-        final MediaItem updatedMediaItem = MediaItem(
-          id: event!.currentSource!.tag.id,
-          title: event.currentSource!.tag.title,
-          artist: event.currentSource!.tag.artist,
-          artUri: event.currentSource!.tag.artUri,
-          duration: event.currentSource?.duration,
-          extras: {'isRadioStream': isRadioStream},
-        );
-        mediaItem.add(updatedMediaItem);
-      } else {
-        mediaItem.add(null);
+    if (preferAudioplayers) {
+      // Bevorzuge audioplayers auf Linux
+      try {
+        _playerAdapter = AudioplayersAdapter();
+        print('Using AudioplayersAdapter (preferred for Linux)');
+      } catch (e) {
+        print('audioplayers not available or failed on Linux: $e');
+        // Fallback auf just_audio, falls audioplayers nicht verfügbar ist
+        try {
+          _playerAdapter = JustAudioAdapter();
+          print('Using JustAudioAdapter (fallback on Linux)');
+        } catch (e) {
+          throw UnsupportedError(
+              'Neither audioplayers nor just_audio is available. Please add at least one to pubspec.yaml.');
+        }
       }
+    } else {
+      // Bevorzuge just_audio auf anderen Plattformen
+      try {
+        _playerAdapter = JustAudioAdapter();
+        print('Using JustAudioAdapter (preferred for non-Linux platforms)');
+      } catch (e) {
+        print('just_audio not available: $e');
+        // Fallback auf audioplayers
+        try {
+          _playerAdapter = AudioplayersAdapter();
+          print('Using AudioplayersAdapter (fallback on non-Linux platforms)');
+        } catch (e) {
+          throw UnsupportedError(
+              'Neither just_audio nor audioplayers is available. Please add at least one to pubspec.yaml.');
+        }
+      }
+    }
+
+    // Listen to play state
+    _playerAdapter!.playingStream.listen((playing) {
+      _playbackState = _playbackState.copyWith(
+        playing: playing,
+        controls: [
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.stop,
+        ],
+        processingState: playing ? AudioProcessingState.ready : AudioProcessingState.idle,
+      );
+      playbackState.add(_playbackState);
+    });
+
+    // Listen to playback position
+    _playerAdapter!.positionStream.listen((position) {
+      _playbackState = _playbackState.copyWith(updatePosition: position);
+      playbackState.add(_playbackState);
+    });
+
+    // Listen to duration
+    _playerAdapter!.durationStream.listen((duration) {
+      if (_currentMediaItem != null) {
+        _currentMediaItem = _currentMediaItem!.copyWith(duration: duration);
+        mediaItem.add(_currentMediaItem!);
+      }
+      _playbackState = _playbackState.copyWith(bufferedPosition: duration);
+      playbackState.add(_playbackState);
     });
   }
 
   @override
-  Future<void> playMediaItem(MediaItem newMediaItem) async {
-    mediaItem.add(newMediaItem);
-    await _player.setAudioSource(
-      AudioSource.uri(Uri.parse(newMediaItem.id), tag: newMediaItem),
-    );
-    await _player.play();
+  Future<void> play() async {
+    if (_currentMediaItem != null) {
+      await _playerAdapter!.play(_currentMediaItem!.id);
+    }
   }
 
   @override
-  Future<void> play() => _player.play();
-
-  @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    await _playerAdapter!.pause();
+  }
 
   @override
   Future<void> stop() async {
-    await _player.stop();
-    playbackState.add(playbackState.value.copyWith(
-      controls: [],
+    await _playerAdapter!.stop();
+    _currentMediaItem = null;
+    mediaItem.add(null);
+    _playbackState = _playbackState.copyWith(
       playing: false,
       processingState: AudioProcessingState.idle,
-    ));
-    mediaItem.add(null);
-  }
-
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
-
-  @override
-  Future<void> skipToNext() {
-    playbackState.add(playbackState.value.copyWith(
-      controls: [MediaControl.skipToNext],
-      playing: true,
-      processingState: AudioProcessingState.loading,
-    ));
-    return super.skipToNext();
-  }
-
-  @override
-  Future<void> skipToPrevious() {
-    playbackState.add(playbackState.value.copyWith(
-      controls: [MediaControl.skipToPrevious],
-      playing: true,
-      processingState: AudioProcessingState.loading,
-    ));
-    return super.skipToPrevious();
-  }
-
-  PlaybackState _transformEvent(PlaybackEvent event) {
-    return PlaybackState(
-      controls: [
-        if (_player.playing) MediaControl.pause else MediaControl.play,
-        if (_player.hasPrevious) MediaControl.skipToPrevious,
-        if (_player.hasNext) MediaControl.skipToNext,
-        MediaControl.stop,
-      ],
-      // NEU: Verwenden Sie systemActions anstelle von actions
-      systemActions: const {
-        MediaAction.seek, 
-        MediaAction.play, 
-        MediaAction.pause, 
-        MediaAction.stop,
-        MediaAction.skipToNext, 
-        MediaAction.skipToPrevious,
-      },
-      androidCompactActionIndices: const [0, 1, 3], 
-      processingState: {
-        ProcessingState.idle: AudioProcessingState.idle,
-        ProcessingState.loading: AudioProcessingState.loading,
-        ProcessingState.buffering: AudioProcessingState.buffering,
-        ProcessingState.ready: AudioProcessingState.ready,
-        ProcessingState.completed: AudioProcessingState.completed,
-      }[_player.processingState]!,
-      playing: _player.playing,
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
-      queueIndex: _player.currentIndex,
     );
+    playbackState.add(_playbackState);
   }
+
+  @override
+  Future<void> seek(Duration position) async {
+    await _playerAdapter!.seek(position);
+  }
+
+  Future<void> playMediaItem(MediaItem mediaItem) async {
+    _currentMediaItem = mediaItem;
+    this.mediaItem.add(mediaItem);
+    await _playerAdapter!.play(mediaItem.id);
+  }
+
+  // Optional: useful for UI
+  Stream<Duration> get positionStream => _playerAdapter!.positionStream;
+  Stream<Duration> get durationStream => _playerAdapter!.durationStream;
+  Stream<bool> get playingStream => _playerAdapter!.playingStream;
 }

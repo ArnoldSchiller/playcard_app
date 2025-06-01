@@ -1,7 +1,7 @@
 // lib/widgets/current_track_display.dart
 import 'package:flutter/material.dart';
-import 'package:playcard_app/config/constants.dart'; // Bleibt hier, falls nötig für Song-Typ
-import 'package:playcard_app/models/song.dart'; // Bleibt hier, falls nötig für Song-Typ
+// Bleibt hier, falls nötig für Song-Typ
+// Bleibt hier, falls nötig für Song-Typ
 
 class CurrentTrackDisplay extends StatelessWidget {
   final List<Map<String, dynamic>> rawRadioStreams;

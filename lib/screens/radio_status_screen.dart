@@ -7,11 +7,6 @@ Explizite Imports für Song, MediaPlayerProvider, SearchProvider, etc.
 
 */
 import 'package:playcard_app/config/config.dart';
-import 'package:provider/provider.dart';
-import 'package:playcard_app/models/song.dart';
-import 'package:playcard_app/providers/media_player_provider.dart';
-import 'package:playcard_app/providers/search_provider.dart';
-import 'package:playcard_app/services/api_service.dart';
 import 'package:playcard_app/widgets/playcard_app_bar.dart';
 import 'package:playcard_app/widgets/radio_streams_list.dart';
 import 'package:playcard_app/widgets/search_results_list.dart';

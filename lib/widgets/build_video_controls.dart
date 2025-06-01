@@ -1,6 +1,5 @@
 import 'package:playcard_app/config/config.dart';
-import 'package:provider/provider.dart'; // Korrigiert
-import 'package:playcard_app/providers/media_player_provider.dart';
+// Korrigiert
 
 class VideoControls extends StatefulWidget {
   const VideoControls({super.key});

@@ -28,6 +28,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_19
         targetCompatibility = JavaVersion.VERSION_19
+        isCoreLibraryDesugaringEnabled = true 
     }
 
     kotlinOptions {
@@ -39,7 +40,7 @@ android {
         applicationId = "de.jaquearnoux.playcard_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -75,6 +76,8 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") 
+    implementation("androidx.core:core-ktx:1.12.0") 
     implementation("com.google.android.material:material:1.12.0")
 }
 

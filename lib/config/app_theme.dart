@@ -1,6 +1,5 @@
 // lib/config/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:playcard_app/config/constants.dart';
 
 // Definition des dunklen Themas, basierend auf Ihrem ursprünglichen Design
 final ThemeData darkTheme = ThemeData(
@@ -23,11 +22,9 @@ final ThemeData darkTheme = ThemeData(
     onError: Colors.black,
     errorContainer: Color(0xFFB00020),
     onErrorContainer: Colors.white,
-    background: Color(0xFF0D123F), // Dunkler Hintergrund
-    onBackground: Colors.white,
     surface: Color(0xFF12184B), // Dunklere Oberfläche für Karten etc.
     onSurface: Colors.white,
-    surfaceVariant: Color(0xFF242A5C),
+    surfaceContainerHighest: Color(0xFF242A5C),
     onSurfaceVariant: Colors.white,
     outline: Color(0xFF444466),
     shadow: Colors.black,
@@ -100,11 +97,9 @@ final ThemeData lightTheme = ThemeData(
     onError: Colors.white,
     errorContainer: Color(0xFFFFCDD2),
     onErrorContainer: Colors.black,
-    background: Colors.white,
-    onBackground: Colors.black,
     surface: Color(0xFFF5F5F5), // Helle Oberfläche
     onSurface: Colors.black,
-    surfaceVariant: Color(0xFFEEEEEE),
+    surfaceContainerHighest: Color(0xFFEEEEEE),
     onSurfaceVariant: Colors.black,
     outline: Color(0xFFBDBDBD),
     shadow: Colors.black54,

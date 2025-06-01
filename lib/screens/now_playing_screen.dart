@@ -1,8 +1,5 @@
 // lib/screens/now_playing_screen.dart
 import 'package:playcard_app/config/config.dart';
-import 'package:provider/provider.dart';
-import 'package:playcard_app/models/song.dart';
-import 'package:playcard_app/providers/media_player_provider.dart';
 
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key});

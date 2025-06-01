@@ -9,7 +9,10 @@
          Wenn Sie ältere Android-Versionen unterstützen, ist sie optional, aber schadet nicht. -->
 
     <application android:label="Playcard jaquearnoux.de"
-	    android:name="${applicationName}" >
+	    android:name="${applicationName}" 
+	    android:enableOnBackInvokedCallback="true" 
+            android:icon="@mipmap/ic_launcher"
+    	    android:roundIcon="@mipmap/ic_launcher_round">
         <meta-data
             android:name="com.ryanheise.audioservice.notification.channel.id"
             android:value="de.jaquearnoux.playcard_app.channel.audio" />
@@ -35,7 +38,7 @@
              Oder verwenden Sie ein vorhandenes wie ic_launcher, wenn es passt. -->
         <meta-data
 		android:name="com.ryanheise.audioservice.notification.icon"
-		android:resource="@mipmap/launcher_icon" />
+		android:resource="@drawable/ic_launcher_foreground" />
             <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -53,10 +56,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-	<activity
-    	    android:name="com.ryanheise.audioservice.AudioServiceActivity"
-            android:exported="true" android:theme="@android:style/Theme.Light.NoTitleBar" />
 
         <meta-data
             android:name="flutterEmbedding"

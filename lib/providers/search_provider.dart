@@ -1,6 +1,4 @@
 import 'package:playcard_app/config/config.dart';
-import 'package:playcard_app/models/song.dart';
-import 'package:playcard_app/services/api_service.dart';
 
 class SearchProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
