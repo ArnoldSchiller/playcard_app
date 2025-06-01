@@ -1,0 +1,85 @@
+// lib/services/audio_handler.dart
+import 'package:audio_service/audio_service.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:playcard_app/services/adapter_interface.dart';
+
+import 'package:playcard_app/services/platform_audio_adapter_stub.dart'
+    if (dart.library.io) 'package:playcard_app/services/platform_audio_adapter_mobile.dart'
+    if (dart.library.html) 'package:playcard_app/services/platform_audio_adapter_other.dart';
+
+class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
+  final AudioPlayerAdapter _playerAdapter;
+  PlaybackState _playbackState = PlaybackState();
+  MediaItem? _currentMediaItem;
+
+  AudioPlayerHandler() : _playerAdapter = createAudioPlayerAdapter() {
+    // Listen to play state
+    _playerAdapter.playingStream.listen((playing) {
+      _playbackState = _playbackState.copyWith(
+        playing: playing,
+        controls: [
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.stop,
+        ],
+        processingState: playing ? AudioProcessingState.ready : AudioProcessingState.idle,
+      );
+      playbackState.add(_playbackState);
+    });
+
+    // Listen to playback position
+    _playerAdapter.positionStream.listen((position) {
+      _playbackState = _playbackState.copyWith(updatePosition: position);
+      playbackState.add(_playbackState);
+    });
+
+    // Listen to duration
+    _playerAdapter.durationStream.listen((duration) {
+      if (_currentMediaItem != null) {
+        _currentMediaItem = _currentMediaItem!.copyWith(duration: duration);
+        mediaItem.add(_currentMediaItem!);
+      }
+      _playbackState = _playbackState.copyWith(bufferedPosition: duration);
+      playbackState.add(_playbackState);
+    });
+  }
+
+  @override
+  Future<void> play() async {
+    if (_currentMediaItem != null) {
+      await _playerAdapter.play(_currentMediaItem!.id);
+    }
+  }
+
+  @override
+  Future<void> pause() async {
+    await _playerAdapter.pause();
+  }
+
+  @override
+  Future<void> stop() async {
+    await _playerAdapter.stop();
+    _currentMediaItem = null;
+    mediaItem.add(null);
+    _playbackState = _playbackState.copyWith(
+      playing: false,
+      processingState: AudioProcessingState.idle,
+    );
+    playbackState.add(_playbackState);
+  }
+
+  @override
+  Future<void> seek(Duration position) async {
+    await _playerAdapter.seek(position);
+  }
+
+  Future<void> playMediaItem(MediaItem mediaItem) async {
+    _currentMediaItem = mediaItem;
+    this.mediaItem.add(mediaItem);
+    await _playerAdapter.play(mediaItem.id);
+  }
+
+  // Optional: useful for UI
+  Stream<Duration> get positionStream => _playerAdapter.positionStream;
+  Stream<Duration> get durationStream => _playerAdapter.durationStream;
+  Stream<bool> get playingStream => _playerAdapter.playingStream;
+}
