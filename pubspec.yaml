@@ -40,7 +40,9 @@ dependencies:
   video_player: any
   media_kit: any
   timezone: any
-  just_audio: ^0.10.3   # Bevorzugt für Android/iOS (optional)
+  just_audio: ^0.10.3   
+  permission_handler: ^12.0.0+1
+  # Bevorzugt für Android/iOS (optional)
   # Kein media_kit für Mobile, optional für Desktop
   # media_kit: any  # Nur für Desktop, falls benötigt
   # media_kit_video: any  # Nur für Desktop, falls benötigt

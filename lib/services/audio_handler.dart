@@ -3,7 +3,10 @@ import 'package:audio_service/audio_service.dart';
 import 'package:playcard_app/services/adapter_interface.dart';
 import 'package:playcard_app/services/just_audio_adapter.dart';
 import 'package:playcard_app/services/audioplayers_adapter.dart';
-import 'package:playcard_app/utils/app_startup.dart';
+import 'package:playcard_app/core/app_startup.dart';
+
+
+
 
 class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   AudioPlayerAdapter? _playerAdapter;
@@ -15,13 +18,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     bool preferAudioplayers = AppStartup.currentPlatform == SupportedPlatform.linux;
 
     if (preferAudioplayers) {
-      // Bevorzuge audioplayers auf Linux
       try {
         _playerAdapter = AudioplayersAdapter();
         print('Using AudioplayersAdapter (preferred for Linux)');
       } catch (e) {
         print('audioplayers not available or failed on Linux: $e');
-        // Fallback auf just_audio, falls audioplayers nicht verfügbar ist
         try {
           _playerAdapter = JustAudioAdapter();
           print('Using JustAudioAdapter (fallback on Linux)');
@@ -31,13 +32,11 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
         }
       }
     } else {
-      // Bevorzuge just_audio auf anderen Plattformen
       try {
         _playerAdapter = JustAudioAdapter();
         print('Using JustAudioAdapter (preferred for non-Linux platforms)');
       } catch (e) {
         print('just_audio not available: $e');
-        // Fallback auf audioplayers
         try {
           _playerAdapter = AudioplayersAdapter();
           print('Using AudioplayersAdapter (fallback on non-Linux platforms)');
@@ -53,9 +52,16 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
       _playbackState = _playbackState.copyWith(
         playing: playing,
         controls: [
+          MediaControl.skipToPrevious,
           playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.skipToNext,
           MediaControl.stop,
         ],
+        systemActions: {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
         processingState: playing ? AudioProcessingState.ready : AudioProcessingState.idle,
       );
       playbackState.add(_playbackState);
@@ -71,7 +77,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _playerAdapter!.durationStream.listen((duration) {
       if (_currentMediaItem != null) {
         _currentMediaItem = _currentMediaItem!.copyWith(duration: duration);
-        mediaItem.add(_currentMediaItem!);
+        this.mediaItem.add(_currentMediaItem!);
       }
       _playbackState = _playbackState.copyWith(bufferedPosition: duration);
       playbackState.add(_playbackState);
@@ -94,7 +100,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Future<void> stop() async {
     await _playerAdapter!.stop();
     _currentMediaItem = null;
-    mediaItem.add(null);
+    this.mediaItem.add(null);
     _playbackState = _playbackState.copyWith(
       playing: false,
       processingState: AudioProcessingState.idle,
@@ -107,6 +113,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     await _playerAdapter!.seek(position);
   }
 
+  @override
   Future<void> playMediaItem(MediaItem mediaItem) async {
     _currentMediaItem = mediaItem;
     this.mediaItem.add(mediaItem);

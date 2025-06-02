@@ -1,260 +1,120 @@
-import 'dart:async';
-import 'dart:io' show Platform;
+// lib/services/audio_handler.dart
 import 'package:audio_service/audio_service.dart';
-import 'package:just_audio/just_audio.dart' as just_audio;
-import 'package:audio_session/audio_session.dart';
-import 'package:audioplayers/audioplayers.dart' as audioplayers;
+import 'package:playcard_app/services/adapter_interface.dart';
+import 'package:playcard_app/services/just_audio_adapter.dart';
+import 'package:playcard_app/services/audioplayers_adapter.dart';
+import 'package:playcard_app/core/app_startup.dart';
 
-// Abstrakte Basisklasse für gemeinsame Logik
-abstract class AudioHandlerBase extends BaseAudioHandler {
-  Future<void> initPlayer();
-  Future<void> playMediaItem(MediaItem newMediaItem);
-  Future<void> play();
-  Future<void> pause();
-  Future<void> stop();
-  Future<void> seek(Duration position);
-  Future<void> skipToNext();
-  Future<void> skipToPrevious();
-  Future<void> dispose();
-}
-
-// Konkrete Implementierung mit plattformspezifischen Overrides
-class AudioPlayerHandler extends AudioHandlerBase {
-  final _justAudioPlayer = just_audio.AudioPlayer();
-  final _audioPlayersPlayer = audioplayers.AudioPlayer();
-  bool _useAudioPlayers = false; // Für Linux
-  StreamSubscription? _playbackEventSubscription;
-  StreamSubscription? _sequenceStateSubscription;
-  StreamSubscription? _audioPlayersStateSubscription;
+class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
+  AudioPlayerAdapter? _playerAdapter;
+  PlaybackState _playbackState = PlaybackState();
+  MediaItem? _currentMediaItem;
 
   AudioPlayerHandler() {
-    _determinePlatform();
-    initPlayer();
-  }
+    // Plattform-spezifische Präferenz
+    bool preferAudioplayers = AppStartup.currentPlatform == SupportedPlatform.linux;
 
-  void _determinePlatform() {
-    if (Platform.isLinux) {
-      _useAudioPlayers = true;
-      print('Verwende audioplayers für Linux.');
-    } else {
-      print('Verwende just_audio für ${Platform.operatingSystem}.');
-    }
-  }
-
-  @override
-  Future<void> initPlayer() async {
-    try {
-      if (_useAudioPlayers) {
-        // Linux: Verwende audioplayers
-        _audioPlayersStateSubscription =
-            _audioPlayersPlayer.onPlayerStateChanged.listen((state) {
-          playbackState.add(playbackState.value.copyWith(
-            playing: state == audioplayers.PlayerState.playing,
-            processingState: state == audioplayers.PlayerState.playing
-                ? AudioProcessingState.ready
-                : state == audioplayers.PlayerState.paused
-                    ? AudioProcessingState.ready
-                    : AudioProcessingState.idle,
-          ));
-        });
-        return;
-      }
-
-      // Andere Plattformen: Verwende just_audio
-      final session = await AudioSession.instance;
-      await session.configure(const AudioSessionConfiguration.music());
-
-      _playbackEventSubscription = _justAudioPlayer.playbackEventStream
-          .map(_transformEvent)
-          .listen((event) {
-        playbackState.add(event);
-      }, onError: (e) {
-        print('Fehler im playbackEventStream: $e');
-      });
-
-      _sequenceStateSubscription =
-          _justAudioPlayer.sequenceStateStream.listen((event) {
-        if (event?.currentSource != null) {
-          final bool isRadioStream =
-              event.currentSource?.tag.extras?['isRadioStream'] ?? false;
-          final MediaItem updatedMediaItem = MediaItem(
-            id: event.currentSource!.tag.id,
-            title: event.currentSource!.tag.title,
-            artist: event.currentSource!.tag.artist,
-            artUri: event.currentSource!.tag.artUri,
-            duration: event.currentSource?.duration,
-            extras: {'isRadioStream': isRadioStream},
-          );
-          mediaItem.add(updatedMediaItem);
-        } else {
-          mediaItem.add(null);
+    if (preferAudioplayers) {
+      // Bevorzuge audioplayers auf Linux
+      try {
+        _playerAdapter = AudioplayersAdapter();
+        print('Using AudioplayersAdapter (preferred for Linux)');
+      } catch (e) {
+        print('audioplayers not available or failed on Linux: $e');
+        // Fallback auf just_audio, falls audioplayers nicht verfügbar ist
+        try {
+          _playerAdapter = JustAudioAdapter();
+          print('Using JustAudioAdapter (fallback on Linux)');
+        } catch (e) {
+          throw UnsupportedError(
+              'Neither audioplayers nor just_audio is available. Please add at least one to pubspec.yaml.');
         }
-      }, onError: (e) {
-        print('Fehler im sequenceStateStream: $e');
-      });
-    } catch (e) {
-      print('Fehler bei der Initialisierung des AudioPlayers: $e');
-      playbackState.add(playbackState.value.copyWith(
-        processingState: AudioProcessingState.error,
-      ));
-    }
-  }
-
-  @override
-  Future<void> playMediaItem(MediaItem newMediaItem) async {
-    try {
-      mediaItem.add(newMediaItem);
-      if (_useAudioPlayers) {
-        await _audioPlayersPlayer.play(audioplayers.UrlSource(newMediaItem.id));
-        return;
       }
-      await _justAudioPlayer.setAudioSource(
-        just_audio.AudioSource.uri(Uri.parse(newMediaItem.id),
-            tag: newMediaItem),
-      );
-      await _justAudioPlayer.play();
-    } catch (e) {
-      print('Fehler beim Abspielen des MediaItems: $e');
-      playbackState.add(playbackState.value.copyWith(
-        processingState: AudioProcessingState.error,
-      ));
+    } else {
+      // Bevorzuge just_audio auf anderen Plattformen
+      try {
+        _playerAdapter = JustAudioAdapter();
+        print('Using JustAudioAdapter (preferred for non-Linux platforms)');
+      } catch (e) {
+        print('just_audio not available: $e');
+        // Fallback auf audioplayers
+        try {
+          _playerAdapter = AudioplayersAdapter();
+          print('Using AudioplayersAdapter (fallback on non-Linux platforms)');
+        } catch (e) {
+          throw UnsupportedError(
+              'Neither just_audio nor audioplayers is available. Please add at least one to pubspec.yaml.');
+        }
+      }
     }
+
+    // Listen to play state
+    _playerAdapter!.playingStream.listen((playing) {
+      _playbackState = _playbackState.copyWith(
+        playing: playing,
+        controls: [
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.stop,
+        ],
+        processingState: playing ? AudioProcessingState.ready : AudioProcessingState.idle,
+      );
+      playbackState.add(_playbackState);
+    });
+
+    // Listen to playback position
+    _playerAdapter!.positionStream.listen((position) {
+      _playbackState = _playbackState.copyWith(updatePosition: position);
+      playbackState.add(_playbackState);
+    });
+
+    // Listen to duration
+    _playerAdapter!.durationStream.listen((duration) {
+      if (_currentMediaItem != null) {
+        _currentMediaItem = _currentMediaItem!.copyWith(duration: duration);
+        mediaItem.add(_currentMediaItem!);
+      }
+      _playbackState = _playbackState.copyWith(bufferedPosition: duration);
+      playbackState.add(_playbackState);
+    });
   }
 
   @override
   Future<void> play() async {
-    try {
-      if (_useAudioPlayers) {
-        await _audioPlayersPlayer.resume();
-        return;
-      }
-      if (!_justAudioPlayer.playing) {
-        if (_justAudioPlayer.audioSource == null) {
-          print('Audioquelle nicht initialisiert. Bitte zuerst playMediaItem aufrufen.');
-          return;
-        }
-        await _justAudioPlayer.play();
-      }
-    } catch (e) {
-      print('Fehler beim Abspielen: $e');
+    if (_currentMediaItem != null) {
+      await _playerAdapter!.play(_currentMediaItem!.id);
     }
   }
 
   @override
   Future<void> pause() async {
-    try {
-      if (_useAudioPlayers) {
-        await _audioPlayersPlayer.pause();
-        return;
-      }
-      if (_justAudioPlayer.playing) {
-        await _justAudioPlayer.pause();
-      }
-    } catch (e) {
-      print('Fehler beim Pausieren: $e');
-    }
+    await _playerAdapter!.pause();
   }
 
   @override
   Future<void> stop() async {
-    try {
-      if (_useAudioPlayers) {
-        await _audioPlayersPlayer.stop();
-      } else {
-        await _justAudioPlayer.stop();
-      }
-      playbackState.add(playbackState.value.copyWith(
-        controls: [],
-        playing: false,
-        processingState: AudioProcessingState.idle,
-      ));
-      mediaItem.add(null);
-    } catch (e) {
-      print('Fehler beim Stoppen: $e');
-    }
+    await _playerAdapter!.stop();
+    _currentMediaItem = null;
+    mediaItem.add(null);
+    _playbackState = _playbackState.copyWith(
+      playing: false,
+      processingState: AudioProcessingState.idle,
+    );
+    playbackState.add(_playbackState);
   }
 
   @override
   Future<void> seek(Duration position) async {
-    try {
-      if (_useAudioPlayers) {
-        await _audioPlayersPlayer.seek(position);
-        return;
-      }
-      await _justAudioPlayer.seek(position);
-    } catch (e) {
-      print('Fehler beim Seek: $e');
-    }
+    await _playerAdapter!.seek(position);
   }
 
-  @override
-  Future<void> skipToNext() async {
-    playbackState.add(playbackState.value.copyWith(
-      controls: [MediaControl.skipToNext],
-      playing: true,
-      processingState: AudioProcessingState.loading,
-    ));
-    await super.skipToNext();
+  Future<void> playMediaItem(MediaItem mediaItem) async {
+    _currentMediaItem = mediaItem;
+    this.mediaItem.add(mediaItem);
+    await _playerAdapter!.play(mediaItem.id);
   }
 
-  @override
-  Future<void> skipToPrevious() async {
-    playbackState.add(playbackState.value.copyWith(
-      controls: [MediaControl.skipToPrevious],
-      playing: true,
-      processingState: AudioProcessingState.loading,
-    ));
-    await super.skipToPrevious();
-  }
-
-  @override
-  Future<void> dispose() async {
-    try {
-      if (_useAudioPlayers) {
-        await _audioPlayersStateSubscription?.cancel();
-        await _audioPlayersPlayer.stop();
-        await _audioPlayersPlayer.dispose();
-      } else {
-        await _playbackEventSubscription?.cancel();
-        await _sequenceStateSubscription?.cancel();
-        await _justAudioPlayer.stop();
-        await _justAudioPlayer.dispose();
-      }
-      await stop();
-    } catch (e) {
-      print('Fehler beim Entsorgen des AudioPlayerHandlers: $e');
-    }
-  }
-
-  PlaybackState _transformEvent(just_audio.PlaybackEvent event) {
-    return PlaybackState(
-      controls: [
-        if (_justAudioPlayer.playing) MediaControl.pause else MediaControl.play,
-        if (_justAudioPlayer.hasPrevious) MediaControl.skipToPrevious,
-        if (_justAudioPlayer.hasNext) MediaControl.skipToNext,
-        MediaControl.stop,
-      ],
-      systemActions: const {
-        MediaAction.seek,
-        MediaAction.play,
-        MediaAction.pause,
-        MediaAction.stop,
-        MediaAction.skipToNext,
-        MediaAction.skipToPrevious,
-      },
-      androidCompactActionIndices: const [0, 1, 3],
-      processingState: {
-        just_audio.ProcessingState.idle: AudioProcessingState.idle,
-        just_audio.ProcessingState.loading: AudioProcessingState.loading,
-        just_audio.ProcessingState.buffering: AudioProcessingState.buffering,
-        just_audio.ProcessingState.ready: AudioProcessingState.ready,
-        just_audio.ProcessingState.completed: AudioProcessingState.completed,
-      }[_justAudioPlayer.processingState]!,
-      playing: _justAudioPlayer.playing,
-      updatePosition: _justAudioPlayer.position,
-      bufferedPosition: _justAudioPlayer.bufferedPosition,
-      speed: _justAudioPlayer.speed,
-      queueIndex: _justAudioPlayer.currentIndex,
-    );
-  }
+  // Optional: useful for UI
+  Stream<Duration> get positionStream => _playerAdapter!.positionStream;
+  Stream<Duration> get durationStream => _playerAdapter!.durationStream;
+  Stream<bool> get playingStream => _playerAdapter!.playingStream;
 }

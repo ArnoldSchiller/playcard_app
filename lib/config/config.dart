@@ -24,3 +24,4 @@ export 'package:playcard_app/providers/search_provider.dart';
 export 'package:playcard_app/providers/media_player_provider.dart';
 export 'package:playcard_app/models/song.dart'; // Für Song
 export 'package:audio_service/audio_service.dart';
+export 'package:playcard_app/utils/notification.dart';

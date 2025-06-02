@@ -11,7 +11,7 @@ Benennt initializeApp zu init für Konsistenz (optional).
 
 import 'package:playcard_app/config/config.dart';
 import 'package:playcard_app/screens/radio_status_screen.dart';
-import 'package:playcard_app/utils/app_startup.dart';
+import 'package:playcard_app/core/app_startup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +20,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

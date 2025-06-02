@@ -1,7 +1,7 @@
 //lib/player/media_kit_initializer.dart 
 /*
 * Use only once!!
-* example /lib/utils/app_startup.dart
+* example /lib/core/app_startup.dart
 */
 import 'package:media_kit/media_kit.dart';
 

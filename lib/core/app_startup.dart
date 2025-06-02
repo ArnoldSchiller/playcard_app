@@ -1,8 +1,8 @@
-// lib/utils/app_startup.dart
+// lib/core/app_startup.dart
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:playcard_app/config/config.dart';
 import 'package:playcard_app/player/audio_service_initializer.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 
 enum SupportedPlatform {
@@ -61,6 +61,16 @@ class AppStartup {
       try {
         if (Platform.isAndroid) {
           currentPlatform = SupportedPlatform.android;
+	  Future<void> requestIgnoreBatteryOptimizations() async {
+ 		 if (Platform.isAndroid) {
+    			final status = await Permission.ignoreBatteryOptimizations.request();
+    		 	if (status.isGranted) {
+      				print('Battery optimization disabled');
+    		 	} else {
+      				print('Battery optimization permission denied');
+    		 	}
+  		   }
+		}
         } else if (Platform.isIOS) {
           currentPlatform = SupportedPlatform.ios;
         } else if (Platform.isLinux) {
@@ -85,9 +95,18 @@ class AppStartup {
     } catch (e) {
       print('Error during initialization: $e');
     }
+
+    try {
+      await NotificationService().init();
+      print('NotificationService initialized.');
+    } catch (e) {
+      print('Error initializing NotificationService: $e');
+    }
+
     _isInitialized = true;
     print('AppStartup: Initialization completed.');
   }
+
 
   static Widget build({required Widget child}) {
     return MultiProvider(

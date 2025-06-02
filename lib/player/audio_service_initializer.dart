@@ -1,6 +1,6 @@
 // lib/player/audio_service_initializer.dart
 import 'package:playcard_app/config/config.dart';
-import 'package:playcard_app/utils/app_startup.dart'; // Damit AppStartup.currentPlatform bekannt ist
+import 'package:playcard_app/core/app_startup.dart'; // Damit AppStartup.currentPlatform bekannt ist
 
 AudioPlayerHandler? _audioHandler;
 
@@ -28,7 +28,8 @@ Future<void> initializeAudioServiceIfNeeded() async {
         androidNotificationChannelId: kNotificationChannelId,
         androidNotificationChannelName: kNotificationChannelName,
         androidNotificationOngoing: true,
-        androidNotificationIcon: 'drawable/music_icon_notification',
+        androidNotificationIcon: kNotificationIcon,
+        androidStopForegroundOnPause: true, // Verhindert, dass der Dienst bei Pause beendet wird
       ),
     );
     print('AudioService initialized.');

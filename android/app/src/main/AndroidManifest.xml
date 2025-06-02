@@ -1,18 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"> <uses-permission android:name="android.permission.INTERNET"/>
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
-    <!-- Wenn Sie Android 14 (API 34) oder höher targeten, ist diese Permission nötig.
-         Wenn Sie ältere Android-Versionen unterstützen, ist sie optional, aber schadet nicht. -->
-
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
     <application android:label="Playcard jaquearnoux.de"
-	    android:name="${applicationName}" 
-	    android:enableOnBackInvokedCallback="true" 
-            android:icon="@mipmap/ic_launcher"
-    	    android:roundIcon="@mipmap/ic_launcher_round">
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+	android:roundIcon="@mipmap/ic_launcher_round"
+	android:enableOnBackInvokedCallback="true" >
         <meta-data
             android:name="com.ryanheise.audioservice.notification.channel.id"
             android:value="de.jaquearnoux.playcard_app.channel.audio" />
@@ -32,13 +33,9 @@
             android:name="com.ryanheise.audioservice.notification.always_show_controllable_notification"
             android:value="true" />
 
-        <!-- Dies ist das Icon, das in der Benachrichtigung und auf dem Sperrbildschirm erscheint.
-             Es muss ein kleines, weißes Icon mit transparentem Hintergrund sein.
-             Legen Sie eine Datei z.B. ic_stat_playcard.png in android/app/src/main/res/drawable/ ab.
-             Oder verwenden Sie ein vorhandenes wie ic_launcher, wenn es passt. -->
         <meta-data
-		android:name="com.ryanheise.audioservice.notification.icon"
-		android:resource="@drawable/ic_launcher_foreground" />
+        android:name="com.ryanheise.audioservice.notification.icon"
+        android:resource="@drawable/ic_stat_jaquearnoux_radio" />
             <activity
             android:name=".MainActivity"
             android:exported="true"
