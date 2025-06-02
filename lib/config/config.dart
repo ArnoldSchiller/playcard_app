@@ -23,5 +23,8 @@ export 'package:playcard_app/services/api_service.dart'; // Für ApiService
 export 'package:playcard_app/providers/search_provider.dart';
 export 'package:playcard_app/providers/media_player_provider.dart';
 export 'package:playcard_app/models/song.dart'; // Für Song
-export 'package:audio_service/audio_service.dart';
+export 'package:audio_service/audio_service.dart'; 
 export 'package:playcard_app/utils/notification.dart';
+export 'package:playcard_app/models/stream_item.dart';
+// lib/providers/media_player_provider.dart
+

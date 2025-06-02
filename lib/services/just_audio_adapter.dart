@@ -1,8 +1,6 @@
 //lib/services/just_audio_adapter.dart
-import 'package:playcard_app/config/config.dart'; 
 import 'package:playcard_app/services/adapter_interface.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:playcard_app/services/platform_audio_adapter_mobile.dart';
 
 class JustAudioAdapter implements AudioPlayerAdapter {
   final AudioPlayer _player = AudioPlayer();

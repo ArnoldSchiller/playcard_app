@@ -77,7 +77,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
     _playerAdapter!.durationStream.listen((duration) {
       if (_currentMediaItem != null) {
         _currentMediaItem = _currentMediaItem!.copyWith(duration: duration);
-        this.mediaItem.add(_currentMediaItem!);
+        mediaItem.add(_currentMediaItem!);
       }
       _playbackState = _playbackState.copyWith(bufferedPosition: duration);
       playbackState.add(_playbackState);
@@ -100,7 +100,7 @@ class AudioPlayerHandler extends BaseAudioHandler with QueueHandler, SeekHandler
   Future<void> stop() async {
     await _playerAdapter!.stop();
     _currentMediaItem = null;
-    this.mediaItem.add(null);
+    mediaItem.add(null);
     _playbackState = _playbackState.copyWith(
       playing: false,
       processingState: AudioProcessingState.idle,

@@ -50,6 +50,7 @@ dependencies:
   # Weitere plattformspezifische media_kit_libs nur bei Bedarf
 
 
+  media_kit_video: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

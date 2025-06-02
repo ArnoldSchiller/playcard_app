@@ -56,7 +56,7 @@ class NowPlayingScreen extends StatelessWidget {
                       icon: const Icon(Icons.skip_previous),
                       onPressed: () {
                         mediaPlayerProvider.stop();
-                        Navigator.pop(context);
+                        
                       },
                     ),
                     IconButton(
