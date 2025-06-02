@@ -4,8 +4,6 @@ import 'package:playcard_app/config/config.dart';
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key});
   
-  @override
-  State<NowPlayingScreen> createState() => _NowPlayingScreenState();
 
   @override
   Widget build(BuildContext context) {
