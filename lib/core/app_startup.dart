@@ -46,7 +46,18 @@ class AppStartup {
         return defaultHandler();
     }
   }
-
+  static Future<void> requestIgnoreBatteryOptimizations() async {
+ 		 if (Platform.isAndroid) {
+     			final status = await Permission.ignoreBatteryOptimizations.request();
+     		 	if (status.isGranted) {
+       				print('Battery optimization disabled');
+     		 	} else {
+       				print('Battery optimization permission denied');
+     		 	}
+   		   }
+ 		}
+ 
+  
   static Future<void> init() async {
     if (_isInitialized) {
       print('AppStartup: Already initialized, skipping.');
@@ -61,16 +72,7 @@ class AppStartup {
       try {
         if (Platform.isAndroid) {
           currentPlatform = SupportedPlatform.android;
-	  Future<void> requestIgnoreBatteryOptimizations() async {
- 		 if (Platform.isAndroid) {
-    			final status = await Permission.ignoreBatteryOptimizations.request();
-    		 	if (status.isGranted) {
-      				print('Battery optimization disabled');
-    		 	} else {
-      				print('Battery optimization permission denied');
-    		 	}
-  		   }
-		}
+	  await requestIgnoreBatteryOptimizations();
         } else if (Platform.isIOS) {
           currentPlatform = SupportedPlatform.ios;
         } else if (Platform.isLinux) {
