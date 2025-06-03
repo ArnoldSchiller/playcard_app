@@ -2,7 +2,7 @@
 /*
 Importiert config.dart für material.dart, constants.dart, app_theme.dart.
 
-Explizite Imports für Song, MediaPlayerProvider, SearchProvider, etc.
+Explizite Imports für StreamItem, MediaPlayerProvider, SearchProvider, etc.
 
 
 */
@@ -62,7 +62,7 @@ class _RadioStatusScreenState extends State<RadioStatusScreen> {
     }
   }
 
-  void _playSong(Song song) {
+  void _playSong(StreamItem song) {
     print('Attempting to play song: ${song.name}, URL: ${song.streamUrl}');
     if (song.streamUrl.isEmpty || Uri.tryParse(song.streamUrl)?.isAbsolute != true) {
       print('Invalid stream URL: ${song.streamUrl}');
@@ -74,7 +74,7 @@ class _RadioStatusScreenState extends State<RadioStatusScreen> {
     final mediaPlayerProvider = context.read<MediaPlayerProvider>();
     try {
       mediaPlayerProvider.play(song);
-      print('Song sent to internal player: ${song.streamUrl}');
+      print('StreamItem sent to internal player: ${song.streamUrl}');
     } catch (e) {
       print('Error with internal player: $e');
       _launchAudio(song.streamUrl, context);

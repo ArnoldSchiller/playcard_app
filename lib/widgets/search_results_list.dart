@@ -1,12 +1,12 @@
 // lib/widgets/search_results_list.dart
 import 'package:flutter/material.dart';
-import 'package:playcard_app/models/song.dart';
+import 'package:playcard_app/models/stream_item.dart';
 
 class SearchResultsList extends StatelessWidget {
-  final List<Song> searchResults;
+  final List<StreamItem> searchResults;
   final bool isLoadingSearch;
   final String? errorMessageSearch;
-  final Function(Song song) onSongTap; // Callback zum Abspielen
+  final Function(StreamItem song) onSongTap; // Callback zum Abspielen
 
   const SearchResultsList({
     super.key,

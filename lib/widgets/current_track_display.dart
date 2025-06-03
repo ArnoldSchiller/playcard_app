@@ -1,7 +1,7 @@
 // lib/widgets/current_track_display.dart
 import 'package:flutter/material.dart';
-// Bleibt hier, falls nötig für Song-Typ
-// Bleibt hier, falls nötig für Song-Typ
+// Bleibt hier, falls nötig für StreamItem-Typ
+// Bleibt hier, falls nötig für StreamItem-Typ
 
 class CurrentTrackDisplay extends StatelessWidget {
   final List<Map<String, dynamic>> rawRadioStreams;

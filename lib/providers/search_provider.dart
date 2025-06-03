@@ -3,12 +3,12 @@ import 'package:playcard_app/config/config.dart';
 class SearchProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
-  List<Song> _searchResults = [];
+  List<StreamItem> _searchResults = [];
   bool _isLoadingSearch = false;
   String? _errorMessageSearch;
 
   TextEditingController get searchController => _searchController;
-  List<Song> get searchResults => _searchResults;
+  List<StreamItem> get searchResults => _searchResults;
   bool get isLoadingSearch => _isLoadingSearch;
   String? get errorMessageSearch => _errorMessageSearch;
   bool get isSearching => _searchController.text.isNotEmpty;
@@ -39,12 +39,12 @@ class SearchProvider extends ChangeNotifier {
       final List<Map<String, dynamic>> results = await _apiService.fetchIndex(search: query, structured: false);
       _searchResults = results
           .map((json) {
-            final song = Song.fromJson({...json, 'isRadioStream': false});
+            final song = StreamItem.fromJson({...json, 'isRadioStream': false});
             // Vervollständige relative streamUrl für Suchergebnisse
             final streamUrl = song.streamUrl.isNotEmpty && !song.streamUrl.startsWith('http')
                 ? '$kBaseUrl${song.streamUrl}'
                 : song.streamUrl;
-            return Song(
+            return StreamItem(
               name: song.name,
               artist: song.artist,
               relativePath: song.relativePath,

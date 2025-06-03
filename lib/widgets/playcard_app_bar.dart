@@ -1,6 +1,6 @@
 // lib/widgets/playcard_app_bar.dart
-
 import 'package:flutter/material.dart';
+import 'package:playcard_app/config/config.dart';
 
 class PlaycardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextEditingController searchController;
@@ -12,8 +12,8 @@ class PlaycardAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.searchController,
     required this.onSearchChanged,
-    this.title = 'Playcard',
-    this.hintText = 'Suchen...', // <<< STANDARDWERT, falls nicht übergeben
+    this.title = kAppName,
+    this.hintText = 'Search...', // <<< STANDARDWERT, falls nicht übergeben
   });
 
   @override
@@ -30,11 +30,23 @@ class PlaycardAppBar extends StatelessWidget implements PreferredSizeWidget {
             onChanged: onSearchChanged,
             decoration: InputDecoration(
               hintText: hintText, // <<< HIER WIRD DER PARAMETER VERWENDET
+	    
               // ... (restliche InputDecoration Einstellungen) ...
             ),
           ),
         ),
       ),
+     actions: [
+  		IconButton(
+    		icon: Icon(Icons.radio),
+    		onPressed: () => Navigator.pushNamed(context, AppRoutes.radio),
+  	),
+  		IconButton(
+    		icon: Icon(Icons.play_arrow),
+    		onPressed: () => Navigator.pushNamed(context, AppRoutes.now),
+  	),
+      ],
+
     );
   }
 

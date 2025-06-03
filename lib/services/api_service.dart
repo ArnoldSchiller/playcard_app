@@ -127,7 +127,7 @@ class ApiService {
   Future<Map<String, dynamic>> fetchApiOverview() => _getJson('');
 
   /// 📻 Holt einen zufälligen Radio-Stream (wiederhergestellt)
-  /// Gibt eine Map<String, dynamic> zurück und ist kompatibel mit dem alten Song.fromJson
+  /// Gibt eine Map<String, dynamic> zurück und ist kompatibel mit dem alten StreamItem.fromJson
   /// (oder wird später mit MediaItemMapper im Provider gemappt)
   Future<Map<String, dynamic>?> fetchRandomRadioStream() async {
     try {

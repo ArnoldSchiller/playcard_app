@@ -30,7 +30,12 @@ class MyApp extends StatelessWidget {
         theme: lightTheme,
         darkTheme: darkTheme,
         themeMode: ThemeMode.system,
-        home: const RadioStatusScreen(),
+        initialRoute: AppRoutes.radio,
+  	routes: {
+    		AppRoutes.home: (context) => const HomeScreen(),
+    		AppRoutes.radio: (context) => const RadioStatusScreen(),
+    		AppRoutes.now: (context) => const NowPlayingScreen(),
+  	},      
       ),
     );
   }

@@ -91,18 +91,20 @@ class AppStartup {
     }
     print('AppStartup: Plattform festgelegt auf $currentPlatform');
 
-    try {
-      // Initialisiere AudioService
-      await initializeAudioServiceIfNeeded();
-    } catch (e) {
-      print('Error during initialization: $e');
-    }
-
+    // Initialisiere den NotificationService
     try {
       await NotificationService().init();
       print('NotificationService initialized.');
     } catch (e) {
       print('Error initializing NotificationService: $e');
+    }
+
+
+    try {
+      // Initialisiere AudioService
+      await initializeAudioServiceIfNeeded();
+    } catch (e) {
+      print('Error during initialization: $e');
     }
 
     _isInitialized = true;

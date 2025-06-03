@@ -1,5 +1,5 @@
-// lib/models/song.dart
-class Song {
+// lib/models/stream_item.dart
+class StreamItem {
   final String name;
   final String? artist;
   final String? relativePath;
@@ -7,7 +7,7 @@ class Song {
   final String? coverImageUrl;
   final bool isRadioStream;
 
-  Song({
+  StreamItem({
     required this.name,
     this.artist,
     this.relativePath,
@@ -16,7 +16,7 @@ class Song {
     this.isRadioStream = false,
   });
 
-  factory Song.fromJson(Map<String, dynamic> json) {
+  factory StreamItem.fromJson(Map<String, dynamic> json) {
     final bool isRadioStream = json.containsKey('mount_point') && (json['mount_point'] as String).isNotEmpty;
 
     String calculatedStreamUrl;
@@ -38,8 +38,8 @@ class Song {
       }
     }
 
-    return Song(
-      name: title ?? json['mount_point']?.toString() ?? json['relative_path']?.toString() ?? 'Unbekannter Song',
+    return StreamItem(
+      name: title ?? json['mount_point']?.toString() ?? json['relative_path']?.toString() ?? 'Unbekannter StreamItem',
       artist: artist,
       relativePath: json['relative_path']?.toString(),
       streamUrl: calculatedStreamUrl,

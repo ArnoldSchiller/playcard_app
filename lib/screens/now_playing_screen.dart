@@ -8,7 +8,7 @@ class NowPlayingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mediaPlayerProvider = context.watch<MediaPlayerProvider>();
-    final Song? currentSong = mediaPlayerProvider.currentSong;
+    final StreamItem? currentSong = mediaPlayerProvider.currentSong;
 
     // Bestimmen, ob es sich um einen Live-Stream handelt
     // Ein Live-Stream hat oft eine Dauer von Duration.zero oder Duration.infinity

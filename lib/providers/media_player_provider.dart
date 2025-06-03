@@ -6,14 +6,14 @@ import 'package:playcard_app/providers/video_player_provider.dart';
 class MediaPlayerProvider extends ChangeNotifier {
   late AudioPlayerHandler _audioHandler;
   VideoPlayerProvider? _videoProvider;
-  Song? _currentSong;
+  StreamItem? _currentSong;
   bool _isPlaying = false;
   Duration _currentPosition = Duration.zero;
   Duration _currentDuration = Duration.zero;
   bool _isBuffering = false;
   final ApiService _apiService = ApiService();
 
-  Song? get currentSong => _currentSong;
+  StreamItem? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   Duration get currentPosition => _currentPosition;
   Duration get currentDuration => _currentDuration;
@@ -35,7 +35,7 @@ class MediaPlayerProvider extends ChangeNotifier {
 
     _audioHandler.mediaItem.listen((mediaItem) {
       if (mediaItem != null) {
-        _currentSong = Song(
+        _currentSong = StreamItem(
           name: mediaItem.title,
           artist: mediaItem.artist,
           streamUrl: mediaItem.id,
@@ -75,7 +75,7 @@ class MediaPlayerProvider extends ChangeNotifier {
             _currentSong!.streamUrl.endsWith('.webm'));
   }
 
-  Future<void> play(Song song) async {
+  Future<void> play(StreamItem song) async {
     await stop();
     _currentSong = song;
 
@@ -92,7 +92,7 @@ class MediaPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _playAudio(Song song) async {
+  Future<void> _playAudio(StreamItem song) async {
     String mediaUrl = song.streamUrl;
     if (!song.isRadioStream && song.relativePath != null) {
       mediaUrl = '$kBaseUrl${song.relativePath}';
@@ -190,8 +190,8 @@ class MediaPlayerProvider extends ChangeNotifier {
     try {
       final randomRadioStreamData = await _apiService.fetchRandomRadioStream(); // Dies ist das Map<String, dynamic>
       if (randomRadioStreamData != null) {
-        // Wandle die Map in ein Song-Objekt um
-        final Song randomSong = Song.fromJson(randomRadioStreamData);
+        // Wandle die Map in ein StreamItem-Objekt um
+        final StreamItem randomSong = StreamItem.fromJson(randomRadioStreamData);
         await play(randomSong);
       }
     } catch (e) {
@@ -209,7 +209,7 @@ class MediaPlayerProvider extends ChangeNotifier {
         return;
       }
       final randomTrack = await _apiService.fetchRandomTrack();
-      final song = Song.fromJson({...randomTrack, 'isRadioStream': false});
+      final song = StreamItem.fromJson({...randomTrack, 'isRadioStream': false});
       await play(song);
     } catch (e) {
       print('Error fetching random track: $e');

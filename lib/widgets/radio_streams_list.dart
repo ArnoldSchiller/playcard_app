@@ -1,12 +1,12 @@
 // lib/widgets/radio_streams_list.dart
 import 'package:flutter/material.dart';
-import 'package:playcard_app/models/song.dart';
+import 'package:playcard_app/models/stream_item.dart';
 import 'package:playcard_app/widgets/current_track_display.dart';
 import 'package:playcard_app/config/constants.dart'; // <-- Bleibt drin, falls benötigt!
 
 class RadioStreamsList extends StatefulWidget {
   final Future<List<Map<String, dynamic>>> radioStreamsFuture;
-  final Function(Song song) onPlayStream;
+  final Function(StreamItem song) onPlayStream;
 
   const RadioStreamsList({
     super.key,
@@ -20,11 +20,11 @@ class RadioStreamsList extends StatefulWidget {
 
 class _RadioStreamsListState extends State<RadioStreamsList> {
 
-  Song _createSongFromRadioStream(Map<String, dynamic> streamData) {
-    // Song.fromJson ohne baseUrl Parameter aufrufen.
+  StreamItem _createSongFromRadioStream(Map<String, dynamic> streamData) {
+    // StreamItem.fromJson ohne baseUrl Parameter aufrufen.
     // Für Radio-Streams enthält streamData['mount_point'] bereits die komplette URL,
     // daher ist keine kBaseUrl-Kombination im Model oder hier nötig.
-    final song = Song.fromJson(streamData);
+    final song = StreamItem.fromJson(streamData);
 
     // KORREKTUR: Das Cover-Bild könnte auch relativ sein, also hier prüfen und die URL vervollständigen.
     String? finalCoverImageUrl = song.coverImageUrl;
@@ -32,8 +32,8 @@ class _RadioStreamsListState extends State<RadioStreamsList> {
       finalCoverImageUrl = '$kBaseUrl${song.coverImageUrl}';
     }
 
-    // Erstelle einen neuen Song mit der korrigierten Cover-URL
-    return Song(
+    // Erstelle einen neuen StreamItem mit der korrigierten Cover-URL
+    return StreamItem(
       name: song.name,
       artist: song.artist,
       relativePath: song.relativePath,
