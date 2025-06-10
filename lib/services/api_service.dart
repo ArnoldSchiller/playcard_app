@@ -18,6 +18,7 @@ class ApiService {
   // Nutze die bereits definierte kApiUrl direkt
   // final String _baseUrl = kApiUrl; // Diese Variable ist überflüssig, da kApiUrl direkt verwendet wird.
 
+
   /// Allgemeine GET-Methode, die JSON zurückliefert (als Map)
   Future<Map<String, dynamic>> _getJson(String endpoint) async {
     final uri = Uri.parse('$kApiUrl/$endpoint'); // Nutze kApiUrl als Basis

@@ -59,14 +59,16 @@ class NowPlayingScreen extends StatelessWidget {
                         
                       },
                     ),
-                    IconButton(
-                      icon: Icon(
-                        mediaPlayerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
-                      ),
-                      onPressed: () {
-                        mediaPlayerProvider.playOrPause();
-                      },
-                    ),
+		    IconButton(
+			   icon: Icon(
+                             mediaPlayerProvider.isProcessing
+			     ? Icons.hourglass_empty // Or a CircularProgressIndicator
+			     : mediaPlayerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
+			   ),
+			   onPressed: mediaPlayerProvider.isProcessing ? null : () { // Disable when processing
+			   mediaPlayerProvider.playOrPause();
+		   	},
+		    ),	
                     IconButton(
                       icon: const Icon(Icons.skip_next),
                       onPressed: () {

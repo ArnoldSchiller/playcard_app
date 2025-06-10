@@ -11,6 +11,7 @@ class MediaPlayerProvider extends ChangeNotifier {
   Duration _currentPosition = Duration.zero;
   Duration _currentDuration = Duration.zero;
   bool _isBuffering = false;
+  bool _isProcessing = false;
   final ApiService _apiService = ApiService();
 
   StreamItem? get currentSong => _currentSong;
@@ -18,6 +19,7 @@ class MediaPlayerProvider extends ChangeNotifier {
   Duration get currentPosition => _currentPosition;
   Duration get currentDuration => _currentDuration;
   bool get isBuffering => _isBuffering;
+  bool get isProcessing => _isProcessing;
 
   MediaPlayerProvider() {
     _audioHandler = AudioPlayerHandler();
@@ -119,6 +121,10 @@ class MediaPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> playOrPause() async {
+    if (isProcessing) return; // Prevent multiple rapid taps
+    _isProcessing = true;
+    notifyListeners(); // Notify listeners to potentially show a loading state on the button immediately
+
     try {
       if (_isVideoStream() && _videoProvider != null) {
         await _videoProvider!.playOrPause();
@@ -129,9 +135,24 @@ class MediaPlayerProvider extends ChangeNotifier {
           await _audioHandler.play();
         }
       }
-      notifyListeners();
+      // Only if play/pause was successful, update the _isPlaying state
+      // (Assuming _audioHandler updates its internal state which _isPlaying reflects)
+      // Or, you might explicitly update _isPlaying here if it's managed by your provider
+      // _isPlaying = !_isPlaying; // This might be handled by _audioHandler itself
     } catch (e) {
-      print('Error in playOrPause: $e');
+      print('Error in playOrPause: $e'); // Good for debugging, but not for user
+      // --- THIS IS THE CRUCIAL PART ---
+      // Handle the error for the user!
+      // Example: Show a SnackBar or AlertDialog
+      // You'll need access to a BuildContext to show UI elements like Snackbars.
+      // This is often done by passing a callback to the UI or using a state management approach
+      // that can trigger UI messages.
+      // For now, let's just reverse the icon change if it already happened
+      _isPlaying = !_isPlaying; // Revert the icon back to previous state if error occurred
+      // --- END CRUCIAL PART ---
+    } finally {
+      _isProcessing = false; // Always reset processing state
+      notifyListeners(); // Notify listeners again to update UI after success or failure
     }
   }
 
